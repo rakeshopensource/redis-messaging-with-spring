@@ -1,0 +1,63 @@
+ <beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:redis="http://www.springframework.org/schema/redis"
+	xmlns:int="http://www.springframework.org/schema/integration"
+  	xmlns:int-redis="http://www.springframework.org/schema/integration/redis"
+  	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans     
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/redis
+		http://www.springframework.org/schema/redis/spring-redis.xsd
+        http://www.springframework.org/schema/integration
+    	http://www.springframework.org/schema/integration/spring-integration-3.0.xsd
+    	http://www.springframework.org/schema/integration/redis
+		http://www.springframework.org/schema/integration/redis/spring-integration-redis-3.0.xsd
+		http://www.springframework.org/schema/task 
+        http://www.springframework.org/schema/task/spring-task-3.0.xsd">
+
+ 
+ 	<task:annotation-driven/>
+ 	
+	<bean id="redisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory"
+		p:use-pool="true" p:host-name="${app.config.redis.host}" p:port="${app.config.redis.port}" p:password="${app.config.redis.password}"/>
+
+	<bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate" 
+		p:connection-factory-ref="redisConnectionFactory"/>
+		
+	<bean id="stringRedisTemplate" class="org.springframework.data.redis.core.StringRedisTemplate" 
+		p:connection-factory-ref="redisConnectionFactory"/>
+	
+	
+	<bean id="redisListener" class="rakeshopensource.redis.listener.RedisMessageListener"/>
+  	
+  	<bean id="redisPublisher" class="rakeshopensource.redis.publisher.RedisPublisherImpl"/>
+	
+	<redis:listener-container connection-factory="redisConnectionFactory">
+		<redis:listener ref="redisListener" method="handleMessage" topic="topic"/>
+	</redis:listener-container>
+		
+	<task:scheduled-tasks>
+        <task:scheduled ref="redisPublisher" method="publish" fixed-delay="100"/>
+    </task:scheduled-tasks> 
+    
+   
+   
+    <bean id="printService" class="rakeshopensource.redis.listener.PrintService"/>
+   
+    <bean id="redisPrintServicePublisher" class="rakeshopensource.redis.publisher.RedisPrintServicePublisher"/>
+    
+    <task:scheduled-tasks>
+        <task:scheduled ref="redisPrintServicePublisher" method="publish" fixed-delay="100"/>
+    </task:scheduled-tasks>
+   	
+   	<int-redis:inbound-channel-adapter id="redisAdapter"
+       topics="${app.config.redis.print.topic}"
+       channel="receiveChannel"/>
+       
+    <int:service-activator input-channel="receiveChannel" ref="printService" method="handleMessage" />  
+    
+    
+
+</beans>
