@@ -15,7 +15,7 @@ public class RedisPrintServicePublisher implements RedisPublisher{
 	private final AtomicLong counter = new AtomicLong( 0 );
 	
 	public void publish() {
-		redisTemplate.convertAndSend( topic , "Message " + counter.incrementAndGet() +", " + Thread.currentThread().getName() );
+		redisTemplate.convertAndSend( topic , "Message " + counter.incrementAndGet() );
 		
 	}
 
