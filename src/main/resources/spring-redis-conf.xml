@@ -28,14 +28,19 @@
 		
 	<bean id="stringRedisTemplate" class="org.springframework.data.redis.core.StringRedisTemplate" 
 		p:connection-factory-ref="redisConnectionFactory"/>
+		
+	<bean id="taskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+    	<property name="corePoolSize" value="5" />
+    	<property name="maxPoolSize" value="10" />
+    	<property name="queueCapacity" value="25" />
+	</bean>
 	
-	
-	<bean id="redisListener" class="rakeshopensource.redis.listener.RedisMessageListener"/>
+	<bean id="redisListener" class="rakeshopensource.redis.listener.RedisMessageListener" />
   	
   	<bean id="redisPublisher" class="rakeshopensource.redis.publisher.RedisPublisherImpl"/>
 	
-	<redis:listener-container connection-factory="redisConnectionFactory">
-		<redis:listener ref="redisListener" method="handleMessage" topic="topic"/>
+	<redis:listener-container connection-factory="redisConnectionFactory" task-executor="taskExecutor">
+		<redis:listener ref="redisListener" method="handleMessage" topic="topic" />
 	</redis:listener-container>
 		
 	<task:scheduled-tasks>
